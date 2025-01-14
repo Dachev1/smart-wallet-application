@@ -1,20 +1,22 @@
-package app.subscription.model;
+package app.transaction.model;
 
 import app.user.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Currency;
 import java.util.UUID;
 
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Subscription {
+public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -23,27 +25,33 @@ public class Subscription {
     @ManyToOne
     private User owner;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubscriptionStatus status;
+    private String sender;
+
+    @Column(nullable = false)
+    private String receiver;
+
+    @Column(nullable = false)
+    private BigDecimal amount;
+
+    @Column(nullable = false)
+    private BigDecimal balanceLeft;
+
+    @Column(nullable = false)
+    private Currency currency;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubscriptionPeriod period;
+    private TransactionType type;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubscriptionType type;
+    private TransactionStatus status;
 
-    @Column(nullable = false)
-    private BigDecimal price;
+    private String description;
 
-    @Column(nullable = false)
-    private boolean renewalAllowed;
+    private String failureReason;
 
     @Column(nullable = false)
     private LocalDateTime createdOn;
-
-    @Column(nullable = false)
-    private LocalDateTime completedOn;
 }

@@ -1,5 +1,7 @@
 package app.user.model;
 
+import app.subscription.model.Subscription;
+import app.wallet.model.Wallet;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,12 +37,12 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserRole role;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Country country;
 
     @Column(nullable = false)

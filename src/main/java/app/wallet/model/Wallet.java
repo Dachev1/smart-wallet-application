@@ -3,20 +3,20 @@ package app.wallet.model;
 import app.user.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Currency;
 import java.util.UUID;
 
-@Entity
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
 public class Wallet {
 
     @Id

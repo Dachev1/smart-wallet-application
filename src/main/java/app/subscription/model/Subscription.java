@@ -3,6 +3,7 @@ package app.subscription.model;
 import app.user.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,10 +11,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
 public class Subscription {
 
     @Id

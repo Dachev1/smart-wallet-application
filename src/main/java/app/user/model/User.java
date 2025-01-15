@@ -4,17 +4,20 @@ import app.subscription.model.Subscription;
 import app.wallet.model.Wallet;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Entity
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
 public class User {
 
     @Id
@@ -50,9 +53,9 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedOn;
 
-    @OneToMany(fetch = FetchType.EAGER,mappedBy = "owner")
-    private List<Subscription> subscriptions;
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "owner")
+    private List<Subscription> subscriptions = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.EAGER,mappedBy = "owner")
-    private List<Wallet> wallets;
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "owner")
+    private List<Wallet> wallets = new ArrayList<>();
 }

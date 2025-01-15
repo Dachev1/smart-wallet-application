@@ -63,16 +63,23 @@ public class UserService {
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new DomainException("Invalid username or password"));
 
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new DomainException("Invalid username or password");
+        }
 
+        if (!user.isActive()) {
+            throw new DomainException("User is not active");
+        }
 
-        return null;
+        log.info("User logged in successfully with username [%s]".formatted(user.getUsername()));
+        return user;
     }
 
     private User initializeUser(RegisterRequest registerRequest) {
         LocalDateTime now = LocalDateTime.now();
         return User.builder()
                 .username(registerRequest.getUsername())
-                .password(registerRequest.getPassword())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .country(registerRequest.getCountry())
                 .role(UserRole.USER)
                 .isActive(true)

@@ -85,7 +85,7 @@ public class UserService {
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .country(registerRequest.getCountry())
                 .role(usersProperty.getDefaultRole())
-                .isActive(usersProperty.getDefaultAccountState())
+                .isActive(usersProperty.isActiveByDefault())
                 .createdOn(now)
                 .updatedOn(now)
                 .build();

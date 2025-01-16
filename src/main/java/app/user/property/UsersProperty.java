@@ -11,9 +11,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class UsersProperty {
 
     private UserRole defaultRole;
-    private boolean defaultAccountState;
-
-    public boolean getDefaultAccountState() {
-        return defaultAccountState;
-    }
+    private boolean activeByDefault;
 }

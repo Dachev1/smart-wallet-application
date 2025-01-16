@@ -5,6 +5,7 @@ import app.subscription.model.Subscription;
 import app.subscription.service.SubscriptionService;
 import app.user.model.User;
 import app.user.model.UserRole;
+import app.user.property.UsersProperty;
 import app.user.repository.UserRepository;
 import app.wallet.model.Wallet;
 import app.wallet.service.WalletService;
@@ -28,13 +29,15 @@ public class UserService {
     private final WalletService walletService;
     private final SubscriptionService subscriptionService;
     private final PasswordEncoder passwordEncoder;
+    private final UsersProperty usersProperty;
 
     @Autowired
-    public UserService(UserRepository userRepository, WalletService walletService, SubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, WalletService walletService, SubscriptionService subscriptionService, PasswordEncoder passwordEncoder, UsersProperty usersProperty) {
         this.userRepository = userRepository;
         this.walletService = walletService;
         this.subscriptionService = subscriptionService;
         this.passwordEncoder = passwordEncoder;
+        this.usersProperty = usersProperty;
     }
 
     @Transactional
@@ -81,8 +84,8 @@ public class UserService {
                 .username(registerRequest.getUsername())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .country(registerRequest.getCountry())
-                .role(UserRole.USER)
-                .isActive(true)
+                .role(usersProperty.getDefaultRole())
+                .isActive(usersProperty.getDefaultAccountState())
                 .createdOn(now)
                 .updatedOn(now)
                 .build();

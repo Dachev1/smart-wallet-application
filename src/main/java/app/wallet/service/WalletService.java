@@ -7,6 +7,7 @@ import app.transaction.service.TransactionService;
 import app.user.model.User;
 import app.wallet.model.Wallet;
 import app.wallet.model.WalletStatus;
+import app.wallet.property.WalletsProperty;
 import app.wallet.repository.WalletRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -21,19 +22,19 @@ import java.util.UUID;
 @Slf4j
 @Service
 public class WalletService {
-    private static final String INITIAL_BALANCE = "20";
-    private static final String SMART_WALLET_LTD = "SMART_WALLET_LTD";
     private static final String WALLET_NOT_FOUNT = "Wallet not found";
     private static final String WALLET_INACTIVE= "Inactive wallet";
     private static final String INSUFFICIENT_BALANCE = "Insufficient balance";
 
     private final WalletRepository walletRepository;
     public final TransactionService transactionService;
+    private final WalletsProperty walletsProperty;
 
     @Autowired
-    public WalletService(WalletRepository walletRepository, TransactionService transactionService) {
+    public WalletService(WalletRepository walletRepository, TransactionService transactionService, WalletsProperty walletsProperty) {
         this.walletRepository = walletRepository;
         this.transactionService = transactionService;
+        this.walletsProperty = walletsProperty;
     }
 
     public Wallet createNewWallet(User user) {
@@ -53,7 +54,7 @@ public class WalletService {
         if (wallet.getStatus() == WalletStatus.INACTIVE) {
 
             return transactionService.createNewTransaction(wallet.getOwner(),
-                    SMART_WALLET_LTD,
+                    walletsProperty.getSystemName(),
                     walletId.toString(),
                     amount,
                     wallet.getBalance(),
@@ -70,7 +71,7 @@ public class WalletService {
         walletRepository.save(wallet);
 
         return transactionService.createNewTransaction(wallet.getOwner(),
-                SMART_WALLET_LTD,
+                walletsProperty.getSystemName(),
                 walletId.toString(),
                 amount,
                 wallet.getBalance(),
@@ -115,7 +116,7 @@ public class WalletService {
         return transactionService.createNewTransaction(
                 owner,
                 walletId.toString(),
-                SMART_WALLET_LTD,
+                walletsProperty.getSystemName(),
                 amount,
                 currentBalance,
                 currency,
@@ -135,9 +136,9 @@ public class WalletService {
 
         return Wallet.builder()
                 .owner(user)
-                .status(WalletStatus.ACTIVE)
-                .balance(new BigDecimal(INITIAL_BALANCE)) // EUR 20
-                .currency(Currency.getInstance("EUR"))
+                .status(walletsProperty.getDefaultStatus())
+                .balance(walletsProperty.getDefaultInitialBalance())
+                .currency(Currency.getInstance(walletsProperty.getDefaultCurrency()))
                 .createdOn(now)
                 .updatedOn(now)
                 .build();

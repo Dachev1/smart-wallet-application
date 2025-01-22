@@ -4,7 +4,6 @@ import app.exception.DomainException;
 import app.subscription.model.Subscription;
 import app.subscription.service.SubscriptionService;
 import app.user.model.User;
-import app.user.model.UserRole;
 import app.user.property.UsersProperty;
 import app.user.repository.UserRepository;
 import app.wallet.model.Wallet;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -45,7 +45,7 @@ public class UserService {
 
         Optional<User> optionalUser = userRepository.findByUsername(registerRequest.getUsername());
 
-        if(optionalUser.isPresent()) {
+        if (optionalUser.isPresent()) {
             throw new DomainException("Username already exists");
         }
 
@@ -89,5 +89,9 @@ public class UserService {
                 .createdOn(now)
                 .updatedOn(now)
                 .build();
+    }
+
+    public User getUserById(UUID id) {
+        return userRepository.findById(id).orElseThrow(() -> new DomainException("User not found"));
     }
 }

@@ -1,25 +1,21 @@
 package app.user.service;
 
 import app.exception.DomainException;
-import app.subscription.model.Subscription;
 import app.subscription.service.SubscriptionService;
 import app.user.model.User;
+import app.user.model.UserRole;
 import app.user.property.UsersProperty;
 import app.user.repository.UserRepository;
-import app.wallet.model.Wallet;
 import app.wallet.service.WalletService;
 import app.web.dto.LoginRequest;
 import app.web.dto.RegisterRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -32,8 +28,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UsersProperty usersProperty;
 
-    @Autowired
-    public UserService(UserRepository userRepository, WalletService walletService, SubscriptionService subscriptionService, PasswordEncoder passwordEncoder, UsersProperty usersProperty) {
+    public UserService(UserRepository userRepository, WalletService walletService,
+                       SubscriptionService subscriptionService, PasswordEncoder passwordEncoder,
+                       UsersProperty usersProperty) {
         this.userRepository = userRepository;
         this.walletService = walletService;
         this.subscriptionService = subscriptionService;
@@ -43,27 +40,76 @@ public class UserService {
 
     @Transactional
     public User register(RegisterRequest registerRequest) {
-
-        Optional<User> optionalUser = userRepository.findByUsername(registerRequest.getUsername());
-
-        if (optionalUser.isPresent()) {
-            throw new DomainException("Username already exists");
-        }
-
-        User savedUser = userRepository.save(initializeUser(registerRequest));
-
-        Wallet standardWallet = walletService.createNewWallet(savedUser);
-        savedUser.setWallets(List.of(standardWallet));
-
-        Subscription defaultSubscription = subscriptionService.createDefaultSubscription(savedUser);
-        savedUser.setSubscriptions(List.of(defaultSubscription));
-
-
-        log.info("Successfully create new user account for username [%s] and id [%s]".formatted(savedUser.getUsername(), savedUser.getId()));
-        return savedUser;
+        validateUsername(registerRequest.getUsername());
+        User newUser = createUser(registerRequest);
+        assignDefaultResourcesToUser(newUser);
+        log.info("Successfully registered user [{}] with ID [{}]", newUser.getUsername(), newUser.getId());
+        return newUser;
     }
 
     public User login(LoginRequest loginRequest) {
+        User user = validateUserCredentials(loginRequest);
+        log.info("User [{}] logged in successfully", user.getUsername());
+        return user;
+    }
+
+    public User getUserById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new DomainException("User not found"));
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAllByOrderByCreatedOnDesc();
+    }
+
+    public long getTotalUsers() {
+        return userRepository.count();
+    }
+
+    public long getActiveUsers() {
+        return userRepository.countByIsActive(true);
+    }
+
+    public long getInactiveUsers() {
+        return userRepository.countByIsActive(false);
+    }
+
+    public long getAdmins() {
+        return userRepository.countByRole(UserRole.ADMIN);
+    }
+
+    public long getNonAdmins() {
+        return userRepository.countByRole(UserRole.USER);
+    }
+
+    // Private helper methods
+    private void validateUsername(String username) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new DomainException("Username already exists");
+        }
+    }
+
+    private User createUser(RegisterRequest registerRequest) {
+        LocalDateTime now = LocalDateTime.now();
+        return userRepository.save(
+                User.builder()
+                        .username(registerRequest.getUsername())
+                        .password(passwordEncoder.encode(registerRequest.getPassword()))
+                        .country(registerRequest.getCountry())
+                        .role(usersProperty.getDefaultRole())
+                        .isActive(usersProperty.isActiveByDefault())
+                        .createdOn(now)
+                        .updatedOn(now)
+                        .build()
+        );
+    }
+
+    private void assignDefaultResourcesToUser(User user) {
+        walletService.createNewWallet(user);
+        subscriptionService.createDefaultSubscription(user);
+    }
+
+    private User validateUserCredentials(LoginRequest loginRequest) {
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new DomainException("Invalid username or password"));
 
@@ -72,31 +118,9 @@ public class UserService {
         }
 
         if (!user.isActive()) {
-            throw new DomainException("User is not active");
+            throw new DomainException("User is inactive");
         }
 
-        log.info("User logged in successfully with username [%s]".formatted(user.getUsername()));
         return user;
-    }
-
-    private User initializeUser(RegisterRequest registerRequest) {
-        LocalDateTime now = LocalDateTime.now();
-        return User.builder()
-                .username(registerRequest.getUsername())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .country(registerRequest.getCountry())
-                .role(usersProperty.getDefaultRole())
-                .isActive(usersProperty.isActiveByDefault())
-                .createdOn(now)
-                .updatedOn(now)
-                .build();
-    }
-
-    public User getUserById(UUID id) {
-        return userRepository.findById(id).orElseThrow(() -> new DomainException("User not found"));
-    }
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdOn"));
     }
 }

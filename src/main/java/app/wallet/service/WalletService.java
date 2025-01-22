@@ -11,26 +11,23 @@ import app.wallet.property.WalletsProperty;
 import app.wallet.repository.WalletRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Currency;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class WalletService {
-    private static final String WALLET_NOT_FOUNT = "Wallet not found";
-    private static final String WALLET_INACTIVE= "Inactive wallet";
-    private static final String INSUFFICIENT_BALANCE = "Insufficient balance";
 
     private final WalletRepository walletRepository;
-    public final TransactionService transactionService;
+    private final TransactionService transactionService;
     private final WalletsProperty walletsProperty;
 
-    @Autowired
     public WalletService(WalletRepository walletRepository, TransactionService transactionService, WalletsProperty walletsProperty) {
         this.walletRepository = walletRepository;
         this.transactionService = transactionService;
@@ -38,102 +35,90 @@ public class WalletService {
     }
 
     public Wallet createNewWallet(User user) {
-        Wallet wallet = walletRepository.save(initializeWallet(user));
-
-        log.info("Create new wallet with [id: %s] and balance %.2f. For user: %s with [id: %s]".formatted(wallet.getId(), wallet.getBalance(), user, user.getId()));
-
+        Wallet wallet = initializeWallet(user);
+        walletRepository.save(wallet);
+        log.info("Created wallet for user [{}] with ID [{}]", user.getUsername(), wallet.getId());
         return wallet;
     }
 
     @Transactional
     public Transaction topUp(UUID walletId, BigDecimal amount) {
-
         Wallet wallet = getWalletById(walletId);
-        String transactionDescription = "Top up %.2f".formatted(amount.doubleValue());
 
-        if (wallet.getStatus() == WalletStatus.INACTIVE) {
-
-            return transactionService.createNewTransaction(wallet.getOwner(),
-                    walletsProperty.getSystemName(),
-                    walletId.toString(),
-                    amount,
-                    wallet.getBalance(),
-                    wallet.getCurrency(),
-                    TransactionType.DEPOSIT,
-                    TransactionStatus.FAILED,
-                    transactionDescription,
-                    "Inactive wallet");
+        if (isWalletInactive(wallet)) {
+            return createFailedTransaction(wallet, amount, "Inactive wallet");
         }
 
-        wallet.setBalance(wallet.getBalance().add(amount));
+        updateWalletBalance(wallet, wallet.getBalance().add(amount));
+        return createSuccessfulTransaction(wallet, amount, "Top up");
+    }
+
+    @Transactional
+    public Transaction charge(UUID walletId, BigDecimal amount, String description) {
+        Wallet wallet = getWalletById(walletId);
+
+        if (wallet == null) {
+            return createFailedTransaction(null, amount, "Wallet not found");
+        }
+
+        if (isWalletInactive(wallet)) {
+            return createFailedTransaction(wallet, amount, "Inactive wallet");
+        }
+
+        if (!hasSufficientBalance(wallet, amount)) {
+            return createFailedTransaction(wallet, amount, "Insufficient balance");
+        }
+
+        updateWalletBalance(wallet, wallet.getBalance().subtract(amount));
+        return createSuccessfulTransaction(wallet, amount, description);
+    }
+
+    private boolean isWalletInactive(Wallet wallet) {
+        return wallet.getStatus() == WalletStatus.INACTIVE;
+    }
+
+    private boolean hasSufficientBalance(Wallet wallet, BigDecimal amount) {
+        return wallet.getBalance().compareTo(amount) >= 0;
+    }
+
+    private void updateWalletBalance(Wallet wallet, BigDecimal newBalance) {
+        wallet.setBalance(newBalance);
         wallet.setUpdatedOn(LocalDateTime.now());
-
         walletRepository.save(wallet);
+    }
 
-        return transactionService.createNewTransaction(wallet.getOwner(),
+    private Transaction createSuccessfulTransaction(Wallet wallet, BigDecimal amount, String description) {
+        return transactionService.createTransaction(
+                wallet.getOwner(),
+                wallet.getId().toString(),
                 walletsProperty.getSystemName(),
-                walletId.toString(),
                 amount,
                 wallet.getBalance(),
                 wallet.getCurrency(),
                 TransactionType.DEPOSIT,
                 TransactionStatus.SUCCEEDED,
-                transactionDescription,
-                null);
-    }
-
-    @Transactional
-    public Transaction charge(UUID walletId, BigDecimal amount, String chargeDescription) {
-        Wallet wallet = walletRepository.findById(walletId).orElse(null);
-        TransactionStatus status = TransactionStatus.SUCCEEDED;
-        String failReason = null;
-        BigDecimal currentBalance = BigDecimal.ZERO;
-        Currency currency = Currency.getInstance("EUR");
-        User owner = null;
-
-        if (wallet == null) {
-            status = TransactionStatus.FAILED;
-            failReason = WALLET_NOT_FOUNT;
-        } else {
-            owner = wallet.getOwner();
-            currentBalance = wallet.getBalance();
-            currency = wallet.getCurrency();
-
-            if (wallet.getStatus() == WalletStatus.INACTIVE) {
-                status = TransactionStatus.FAILED;
-                failReason = WALLET_INACTIVE;
-            } else if (currentBalance.compareTo(amount) < 0) {
-                status = TransactionStatus.FAILED;
-                failReason = INSUFFICIENT_BALANCE;
-            } else {
-                wallet.setBalance(currentBalance.subtract(amount));
-                wallet.setUpdatedOn(LocalDateTime.now());
-                walletRepository.save(wallet);
-                currentBalance = wallet.getBalance();
-            }
-        }
-
-        return transactionService.createNewTransaction(
-                owner,
-                walletId.toString(),
-                walletsProperty.getSystemName(),
-                amount,
-                currentBalance,
-                currency,
-                TransactionType.WITHDRAWAL,
-                status,
-                chargeDescription,
-                failReason
+                description,
+                null
         );
     }
 
-    private Wallet getWalletById(UUID walletId) {
-        return walletRepository.findById(walletId).orElse(null);
+    private Transaction createFailedTransaction(Wallet wallet, BigDecimal amount, String reason) {
+        return transactionService.createTransaction(
+                wallet != null ? wallet.getOwner() : null,
+                wallet != null ? wallet.getId().toString() : "N/A",
+                walletsProperty.getSystemName(),
+                amount,
+                wallet != null ? wallet.getBalance() : BigDecimal.ZERO,
+                wallet != null ? wallet.getCurrency() : Currency.getInstance("USD"),
+                TransactionType.DEPOSIT,
+                TransactionStatus.FAILED,
+                "Transaction failed",
+                reason
+        );
     }
 
     private Wallet initializeWallet(User user) {
         LocalDateTime now = LocalDateTime.now();
-
         return Wallet.builder()
                 .owner(user)
                 .status(walletsProperty.getDefaultStatus())
@@ -142,5 +127,27 @@ public class WalletService {
                 .createdOn(now)
                 .updatedOn(now)
                 .build();
+    }
+
+    private Wallet getWalletById(UUID walletId) {
+        return walletRepository.findById(walletId).orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+    }
+
+    public long getTotalWallets() {
+        return walletRepository.count();
+    }
+
+    public BigDecimal getTotalWalletAmount() {
+        return walletRepository.findAll().stream()
+                .map(Wallet::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public Map<String, Long> getWalletDistribution() {
+        return walletRepository.findAll().stream()
+                .collect(Collectors.groupingBy(
+                        wallet -> wallet.getOwner().getWallets().size() + " Wallets",
+                        Collectors.counting()
+                ));
     }
 }

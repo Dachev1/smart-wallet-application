@@ -1,5 +1,14 @@
 package app.user.service;
 
+import app.subscription.model.Subscription;
+import app.subscription.model.SubscriptionPeriod;
+import app.subscription.model.SubscriptionStatus;
+import app.subscription.model.SubscriptionType;
+import app.subscription.repository.SubscriptionRepository;
+import app.transaction.model.Transaction;
+import app.transaction.model.TransactionStatus;
+import app.transaction.model.TransactionType;
+import app.transaction.repository.TransactionRepository;
 import app.user.model.Country;
 import app.user.model.User;
 import app.user.model.UserRole;
@@ -7,11 +16,6 @@ import app.user.repository.UserRepository;
 import app.wallet.model.Wallet;
 import app.wallet.model.WalletStatus;
 import app.wallet.repository.WalletRepository;
-import app.subscription.model.Subscription;
-import app.subscription.model.SubscriptionPeriod;
-import app.subscription.model.SubscriptionStatus;
-import app.subscription.model.SubscriptionType;
-import app.subscription.repository.SubscriptionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -28,19 +32,21 @@ public class UserInit implements CommandLineRunner {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final TransactionRepository transactionRepository;
 
     @Autowired
     public UserInit(UserRepository userRepository,
                     WalletRepository walletRepository,
-                    SubscriptionRepository subscriptionRepository) {
+                    SubscriptionRepository subscriptionRepository,
+                    TransactionRepository transactionRepository) {
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     @Override
     public void run(String... args) throws Exception {
-
         LocalDateTime now = LocalDateTime.now();
 
         if (userRepository.count() != 0) {
@@ -83,6 +89,50 @@ public class UserInit implements CommandLineRunner {
                 .build();
         subscriptionRepository.saveAndFlush(subscription);
 
-        log.info("User, wallet, and subscription initialized successfully");
+        // Create Transactions
+        Transaction transaction1 = Transaction.builder()
+                .owner(user)
+                .sender("user123")
+                .receiver("merchant001")
+                .amount(new BigDecimal("-50.00"))
+                .balanceLeft(new BigDecimal("50.00"))
+                .currency(Currency.getInstance("EUR"))
+                .type(TransactionType.DEPOSIT)
+                .status(TransactionStatus.SUCCEEDED)
+                .description("Payment for Order #123")
+                .createdOn(now.minusDays(2))
+                .build();
+
+        Transaction transaction2 = Transaction.builder()
+                .owner(user)
+                .sender("user123")
+                .receiver("merchant002")
+                .amount(new BigDecimal("-30.00"))
+                .balanceLeft(new BigDecimal("50.00"))
+                .currency(Currency.getInstance("EUR"))
+                .type(TransactionType.DEPOSIT)
+                .status(TransactionStatus.FAILED)
+                .failureReason("Insufficient funds")
+                .createdOn(now.minusDays(1))
+                .build();
+
+        Transaction transaction3 = Transaction.builder()
+                .owner(user)
+                .sender("merchant456")
+                .receiver("user123")
+                .amount(new BigDecimal("20.00"))
+                .balanceLeft(new BigDecimal("70.00"))
+                .currency(Currency.getInstance("EUR"))
+                .type(TransactionType.WITHDRAWAL)
+                .status(TransactionStatus.SUCCEEDED)
+                .description("Refund for Order #456")
+                .createdOn(now.minusHours(5))
+                .build();
+
+        transactionRepository.saveAndFlush(transaction1);
+        transactionRepository.saveAndFlush(transaction2);
+        transactionRepository.saveAndFlush(transaction3);
+
+        log.info("User, wallet, subscription, and transactions initialized successfully");
     }
 }

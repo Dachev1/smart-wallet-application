@@ -31,7 +31,7 @@ public class SubscriptionController {
     public ModelAndView getHistoryPage() {
 
         // Will be fixed soon with session
-        List<Subscription> allSubscriptionsByUser = subscriptionService.getAllSubscriptionByUserId(UUID.fromString("bd403b83-b9b3-45f1-a4d5-0cee85234c0f"));
+        List<Subscription> allSubscriptionsByUser = subscriptionService.getAllSubscriptionsByUserId(UUID.fromString("5363c7f5-19aa-4f06-9fe6-28498790e7eb"));
 
         ModelAndView mav = new ModelAndView("subscription-history");
 

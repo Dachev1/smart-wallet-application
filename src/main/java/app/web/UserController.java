@@ -39,7 +39,7 @@ public class UserController {
 
         ModelAndView mav = new ModelAndView("profile-menu");
 
-        User user = userService.getUserById(UUID.fromString("bd403b83-b9b3-45f1-a4d5-0cee85234c0f"));
+        User user = userService.getUserById(UUID.fromString("5363c7f5-19aa-4f06-9fe6-28498790e7eb"));
 
         mav.addObject("user", user);
 

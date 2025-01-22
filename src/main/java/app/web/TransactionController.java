@@ -24,7 +24,7 @@ public class TransactionController {
     public ModelAndView getTransactionsPage() {
 
         // After I add session I will be removed this
-        List<Transaction> transactions = transactionService.getUserTransactionsById(UUID.fromString("bd403b83-b9b3-45f1-a4d5-0cee85234c0f"));
+        List<Transaction> transactions = transactionService.getUserTransactionsById(UUID.fromString("5363c7f5-19aa-4f06-9fe6-28498790e7eb"));
 
         ModelAndView mav = new ModelAndView("transactions");
         mav.addObject("transactions", transactions);

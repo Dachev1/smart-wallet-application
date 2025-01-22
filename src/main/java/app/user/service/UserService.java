@@ -13,6 +13,7 @@ import app.web.dto.RegisterRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -93,5 +94,9 @@ public class UserService {
 
     public User getUserById(UUID id) {
         return userRepository.findById(id).orElseThrow(() -> new DomainException("User not found"));
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdOn"));
     }
 }

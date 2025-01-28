@@ -9,6 +9,7 @@ import app.user.repository.UserRepository;
 import app.wallet.service.WalletService;
 import app.web.dto.LoginRequest;
 import app.web.dto.RegisterRequest;
+import app.web.dto.UserEditRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -51,6 +52,22 @@ public class UserService {
         User user = validateUserCredentials(loginRequest);
         log.info("User [{}] logged in successfully", user.getUsername());
         return user;
+    }
+
+    public void editUserDetails(UUID userId, UserEditRequest editRequest) {
+
+        User user = getUserById(userId);
+
+        user.setFirstName(editRequest.getFirstName());
+        user.setLastName(editRequest.getLastName());
+        user.setEmail(editRequest.getEmail());
+        user.setProfilePicture(editRequest.getProfilePicture());
+
+        user.setUpdatedOn(LocalDateTime.now());
+
+        userRepository.save(user);
+
+        log.info("User [{}] updated successfully", user.getId());
     }
 
     public User getUserById(UUID id) {

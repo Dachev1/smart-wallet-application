@@ -2,11 +2,13 @@ package app.web;
 
 import app.user.model.User;
 import app.user.service.UserService;
+import app.web.dto.UserEditRequest;
+import app.web.mapper.DtoMapper;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.util.List;
@@ -23,27 +25,43 @@ public class UserController {
         this.userService = userService;
     }
 
+    // Get all users
     @GetMapping
     public ModelAndView getUsersPage() {
-
         List<User> users = userService.getAllUsers();
-
         ModelAndView mav = new ModelAndView("users");
         mav.addObject("users", users);
-
         return mav;
     }
 
+    // Get a single user's profile
     @GetMapping("/{id}/profile")
     public ModelAndView getUserProfile(@PathVariable("id") UUID userId) {
+        User user = userService.getUserById(userId);
+        UserEditRequest userEditRequest = DtoMapper.mapToUserEditRequest(user);
 
         ModelAndView mav = new ModelAndView("profile-menu");
-
-        User user = userService.getUserById(UUID.fromString("5363c7f5-19aa-4f06-9fe6-28498790e7eb"));
-
         mav.addObject("user", user);
+        mav.addObject("userEditRequest", userEditRequest);
 
         return mav;
     }
 
+    // Update a user's profile
+    @PutMapping("/{id}/profile")
+    public ModelAndView updateUserProfile(
+            @PathVariable("id") UUID userId,
+            @Valid UserEditRequest userEditRequest,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            ModelAndView mav = new ModelAndView("profile-menu");
+            mav.addObject("user", userService.getUserById(userId));
+            mav.addObject("userEditRequest", userEditRequest);
+            return mav;
+        }
+
+        userService.editUserDetails(userId, userEditRequest);
+        return new ModelAndView("redirect:/home");
+    }
 }

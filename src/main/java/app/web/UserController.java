@@ -37,7 +37,7 @@ public class UserController {
     // Get a single user's profile
     @GetMapping("/{id}/profile")
     public ModelAndView getUserProfile(@PathVariable("id") UUID userId) {
-        User user = userService.getUserById(userId);
+        User user = userService.getById(userId);
         UserEditRequest userEditRequest = DtoMapper.mapToUserEditRequest(user);
 
         ModelAndView mav = new ModelAndView("profile-menu");
@@ -56,7 +56,7 @@ public class UserController {
 
         if (bindingResult.hasErrors()) {
             ModelAndView mav = new ModelAndView("profile-menu");
-            mav.addObject("user", userService.getUserById(userId));
+            mav.addObject("user", userService.getById(userId));
             mav.addObject("userEditRequest", userEditRequest);
             return mav;
         }

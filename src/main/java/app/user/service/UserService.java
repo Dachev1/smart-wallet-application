@@ -56,7 +56,7 @@ public class UserService {
 
     public void editUserDetails(UUID userId, UserEditRequest editRequest) {
 
-        User user = getUserById(userId);
+        User user = getById(userId);
 
         user.setFirstName(editRequest.getFirstName());
         user.setLastName(editRequest.getLastName());
@@ -70,7 +70,7 @@ public class UserService {
         log.info("User [{}] updated successfully", user.getId());
     }
 
-    public User getUserById(UUID id) {
+    public User getById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new DomainException("User not found"));
     }

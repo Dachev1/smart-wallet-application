@@ -26,7 +26,7 @@ public class HomeController {
 
         // After I add session I will be removed this
         // To get the user last transaction for <p> in the html
-        User user = userService.getUserById(UUID.fromString("c076ffe2-f550-4074-99ed-81e931dba215"));
+        User user = userService.getById(UUID.fromString("c076ffe2-f550-4074-99ed-81e931dba215"));
 
         ModelAndView mav = new ModelAndView("home");
         mav.addObject("user", user);

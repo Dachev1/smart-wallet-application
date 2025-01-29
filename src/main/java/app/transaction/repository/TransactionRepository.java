@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
-    List<Transaction> getAllByOwnerId(UUID userId);
+    List<Transaction> getAllByOwnerIdOrderByCreatedOnDesc(UUID userId);
 
     long countByType(TransactionType type);
 

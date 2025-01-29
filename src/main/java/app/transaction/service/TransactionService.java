@@ -1,10 +1,12 @@
 package app.transaction.service;
 
+import app.exception.DomainException;
 import app.transaction.model.Transaction;
 import app.transaction.model.TransactionStatus;
 import app.transaction.model.TransactionType;
 import app.transaction.repository.TransactionRepository;
 import app.user.model.User;
+import app.wallet.model.Wallet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -56,8 +58,9 @@ public class TransactionService {
         return savedTransaction;
     }
 
+
     public List<Transaction> getUserTransactionsById(UUID userId) {
-        return transactionRepository.getAllByOwnerId(userId);
+        return transactionRepository.getAllByOwnerIdOrderByCreatedOnDesc(userId);
     }
 
     public long getTotalTransactions() {
@@ -84,6 +87,36 @@ public class TransactionService {
 
     public long getFailedTransactions() {
         return transactionRepository.countByStatus(TransactionStatus.FAILED);
+    }
+
+    public Transaction createSuccessfulTransaction(Wallet wallet, BigDecimal amount, String description, String receiver) {
+        return createTransaction(
+                wallet.getOwner(),
+                wallet.getId().toString(),
+                receiver,
+                amount,
+                wallet.getBalance(),
+                wallet.getCurrency(),
+                TransactionType.WITHDRAWAL,
+                TransactionStatus.SUCCEEDED,
+                description,
+                null
+        );
+    }
+
+    public Transaction createFailedTransaction(Wallet wallet, BigDecimal amount, String reason,  String receiver) {
+        return createTransaction(
+                wallet != null ? wallet.getOwner() : null,
+                wallet != null ? wallet.getId().toString() : "N/A",
+                receiver,
+                amount,
+                wallet != null ? wallet.getBalance() : BigDecimal.ZERO,
+                wallet != null ? wallet.getCurrency() : Currency.getInstance("USD"),
+                TransactionType.WITHDRAWAL,
+                TransactionStatus.FAILED,
+                "Transaction failed",
+                reason
+        );
     }
 
     // Private Helper Methods
@@ -123,5 +156,9 @@ public class TransactionService {
                 .failureReason(failureReason)
                 .createdOn(LocalDateTime.now())
                 .build();
+    }
+
+    public Transaction getById(UUID id) {
+        return transactionRepository.findById(id).orElseThrow(() -> new DomainException("Transaction with id [%s] does not exist.".formatted(id)));
     }
 }

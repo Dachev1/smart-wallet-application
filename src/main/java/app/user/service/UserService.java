@@ -140,4 +140,10 @@ public class UserService {
 
         return user;
     }
+
+    public String getUsernameById(UUID userId) {
+        return userRepository.findById(userId)
+                .map(User::getUsername)
+                .orElse(null);
+    }
 }

@@ -1,5 +1,7 @@
 package app.web.dto;
 
+import app.validation.SelfTransferNotAllowed;
+import app.validation.WalletOwner;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +11,6 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @WalletOwner
-@SelfTransferNotAllowed
 
 @Data
 public class TransferRequest {
@@ -17,6 +18,7 @@ public class TransferRequest {
     @NotNull(message = "Sender wallet ID is required")
     private UUID fromWalletId;
 
+    @SelfTransferNotAllowed
     @NotBlank(message = "Recipient username is required")
     private String toUsername;
 

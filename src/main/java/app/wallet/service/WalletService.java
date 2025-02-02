@@ -16,10 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Currency;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -176,5 +173,9 @@ public class WalletService {
 
     private static String getUsernameByWallet(Wallet wallet) {
         return wallet.getOwner().getUsername();
+    }
+
+    public Collection<Wallet> getWalletsByUserId(User owner) {
+        return walletRepository.findByOwner(owner);
     }
 }

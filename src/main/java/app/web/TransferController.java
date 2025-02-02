@@ -48,6 +48,7 @@ public class TransferController {
         if (bindingResult.hasErrors()) {
             ModelAndView mav = new ModelAndView("transfer");
             mav.addObject("transferRequest", transferRequest);
+            mav.addObject("user", userSender);
             return mav;
         }
 
@@ -55,5 +56,4 @@ public class TransferController {
 
         return new ModelAndView("redirect:/transactions/" + transaction.getId());
     }
-
 }

@@ -2,6 +2,7 @@ package app.web;
 
 import app.transaction.model.Transaction;
 import app.transaction.service.TransactionService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,10 +23,9 @@ public class TransactionController {
     }
 
     @GetMapping("/transactions")
-    public ModelAndView getTransactionsPage() {
+    public ModelAndView getTransactionsPage(HttpSession session) {
 
-        // After I add session I will be removed this
-        List<Transaction> transactions = transactionService.getUserTransactionsById(UUID.fromString("c9b686e2-33cb-453a-a2a6-c0c57a32bf49"));
+        List<Transaction> transactions = transactionService.getUserTransactionsById((UUID) session.getAttribute("user_id"));
 
         ModelAndView mav = new ModelAndView("transactions");
         mav.addObject("transactions", transactions);

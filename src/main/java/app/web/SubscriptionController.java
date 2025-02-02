@@ -2,6 +2,7 @@ package app.web;
 
 import app.subscription.model.Subscription;
 import app.subscription.service.SubscriptionService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,10 +29,10 @@ public class SubscriptionController {
     }
 
     @GetMapping("/history")
-    public ModelAndView getHistoryPage() {
+    public ModelAndView getHistoryPage(HttpSession session) {
 
-        // Will be fixed soon with session
-        List<Subscription> allSubscriptionsByUser = subscriptionService.getAllSubscriptionsByUserId(UUID.fromString("5363c7f5-19aa-4f06-9fe6-28498790e7eb"));
+
+        List<Subscription> allSubscriptionsByUser = subscriptionService.getAllSubscriptionsByUserId((UUID) session.getAttribute("user_id"));
 
         ModelAndView mav = new ModelAndView("subscription-history");
 

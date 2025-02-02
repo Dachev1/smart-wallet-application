@@ -143,9 +143,10 @@
     <div class="single-section-box home-standard-wallet">
       <div class="default-label-box">
         <p>Standard Wallet</p>
-        <p th:class="${user.wallets[0].status == 'ACTIVE' ? 'active-wallet-status' : 'inactive-wallet-status'}"
-           th:text="${user.wallets[0].status == 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'}">
+        <p th:class="${#strings.equalsIgnoreCase(user.wallets[0].status, 'ACTIVE') ? 'active-wallet-status' : 'inactive-wallet-status'}"
+           th:text="${#strings.equalsIgnoreCase(user.wallets[0].status, 'ACTIVE') ? 'ACTIVE' : 'INACTIVE'}">
         </p>
+
       </div>
       <div class="wallet-balance">
         <p class="balance" th:text="${user.wallets[0].balance} + ' EUR'"></p>

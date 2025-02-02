@@ -1,8 +1,10 @@
 package app.web;
 
+import app.user.model.User;
 import app.user.service.UserService;
 import app.web.dto.LoginRequest;
 import app.web.dto.RegisterRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -38,13 +40,15 @@ public class IndexController {
     }
 
     @PostMapping("/login")
-    public ModelAndView doRegister(@Valid @ModelAttribute LoginRequest loginRequest, BindingResult bindingResult) {
+    public ModelAndView doLogin(@Valid @ModelAttribute LoginRequest loginRequest, BindingResult bindingResult, HttpSession session) {
 
         if (bindingResult.hasErrors()) {
             return new ModelAndView("login");
         }
 
-        userService.login(loginRequest);
+        User loggedUser = userService.login(loginRequest);
+
+        session.setAttribute("user_id", loggedUser.getId());
 
         return new ModelAndView("redirect:/home");
     }

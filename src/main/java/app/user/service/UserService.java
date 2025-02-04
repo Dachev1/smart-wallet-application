@@ -146,4 +146,12 @@ public class UserService {
                 .map(User::getUsername)
                 .orElse(null);
     }
+
+    public void toggleUserActiveStatus(UUID userId) {
+
+        User user = getById(userId);
+        user.setActive(!user.isActive());
+
+        userRepository.save(user);
+    }
 }

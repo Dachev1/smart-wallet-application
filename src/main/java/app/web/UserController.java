@@ -49,10 +49,7 @@ public class UserController {
 
     // Update a user's profile
     @PutMapping("/{id}/profile")
-    public ModelAndView updateUserProfile(
-            @PathVariable("id") UUID userId,
-            @Valid UserEditRequest userEditRequest,
-            BindingResult bindingResult) {
+    public ModelAndView updateUserProfile(@PathVariable("id") UUID userId, @Valid UserEditRequest userEditRequest, BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             ModelAndView mav = new ModelAndView("profile-menu");
@@ -63,5 +60,13 @@ public class UserController {
 
         userService.editUserDetails(userId, userEditRequest);
         return new ModelAndView("redirect:/home");
+    }
+
+    @PutMapping("/{id}/status")
+    public ModelAndView updateUserProfile(@PathVariable("id") UUID userId) {
+
+        userService.toggleUserActiveStatus(userId);
+
+        return new ModelAndView("redirect:/users");
     }
 }

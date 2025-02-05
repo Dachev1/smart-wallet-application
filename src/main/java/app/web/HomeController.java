@@ -24,11 +24,13 @@ public class HomeController {
     @GetMapping("/home")
     public ModelAndView getHomePage(HttpSession session) {
 
-        User user = userService.getById((UUID) session.getAttribute("user_id"));
+        UUID userId = (UUID) session.getAttribute("user_id");
+        User user = userService.getById(userId);
 
-        ModelAndView mav = new ModelAndView("home");
-        mav.addObject("user", user);
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("home");
+        modelAndView.addObject("user", user);
 
-        return mav;
+        return modelAndView;
     }
 }

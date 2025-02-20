@@ -1,5 +1,6 @@
 package app.web;
 
+import app.security.AuthenticationDetails;
 import app.subscription.model.Subscription;
 import app.subscription.model.SubscriptionType;
 import app.subscription.service.SubscriptionService;
@@ -7,8 +8,8 @@ import app.transaction.model.Transaction;
 import app.user.model.User;
 import app.user.service.UserService;
 import app.web.dto.UpgradeRequest;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,10 +34,9 @@ public class SubscriptionController {
     }
 
     @GetMapping
-    public ModelAndView getUpgradePage(HttpSession session) {
+    public ModelAndView getUpgradePage(@AuthenticationPrincipal AuthenticationDetails authenticationDetails) {
 
-        UUID userId = (UUID) session.getAttribute("user_id");
-        User user = userService.getById(userId);
+        User user = userService.getById(authenticationDetails.getUserId());
 
         ModelAndView mav = new ModelAndView("upgrade");
         mav.addObject("user", user);
@@ -46,10 +46,9 @@ public class SubscriptionController {
     }
 
     @PostMapping
-    public ModelAndView subscribe(@RequestParam("subscription-type") SubscriptionType subscriptionType, HttpSession session, UpgradeRequest upgradeRequest) {
+    public ModelAndView subscribe(@RequestParam("subscription-type") SubscriptionType subscriptionType, @AuthenticationPrincipal AuthenticationDetails authenticationDetails, UpgradeRequest upgradeRequest) {
 
-        UUID userId = (UUID) session.getAttribute("user_id");
-        User user = userService.getById(userId);
+        User user = userService.getById(authenticationDetails.getUserId());
 
         Transaction transaction = subscriptionService.createSubscription(user, subscriptionType, upgradeRequest);
 
@@ -60,10 +59,10 @@ public class SubscriptionController {
     }
 
     @GetMapping("/history")
-    public ModelAndView getHistoryPage(HttpSession session) {
+    public ModelAndView getHistoryPage(@AuthenticationPrincipal AuthenticationDetails authenticationDetails) {
 
 
-        List<Subscription> allSubscriptionsByUser = subscriptionService.getAllSubscriptionsByUserId((UUID) session.getAttribute("user_id"));
+        List<Subscription> allSubscriptionsByUser = subscriptionService.getAllSubscriptionsByUserId((UUID) authenticationDetails.getUserId());
 
         ModelAndView mav = new ModelAndView("subscription-history");
 

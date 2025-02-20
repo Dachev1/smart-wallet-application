@@ -1,6 +1,7 @@
 package app.user.service;
 
 import app.exception.DomainException;
+import app.security.AuthenticationDetails;
 import app.subscription.service.SubscriptionService;
 import app.user.model.User;
 import app.user.model.UserRole;
@@ -12,6 +13,9 @@ import app.web.dto.RegisterRequest;
 import app.web.dto.UserEditRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +25,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final WalletService walletService;
@@ -46,12 +50,6 @@ public class UserService {
         assignDefaultResourcesToUser(newUser);
         log.info("Successfully registered user [{}] with ID [{}]", newUser.getUsername(), newUser.getId());
         return newUser;
-    }
-
-    public User login(LoginRequest loginRequest) {
-        User user = validateUserCredentials(loginRequest);
-        log.info("User [{}] logged in successfully", user.getUsername());
-        return user;
     }
 
     public void editUserDetails(UUID userId, UserEditRequest editRequest) {
@@ -153,5 +151,19 @@ public class UserService {
         user.setActive(!user.isActive());
 
         userRepository.save(user);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return new AuthenticationDetails(
+                user.getId(),
+                user.getUsername(),
+                user.getPassword(),
+                user.getRole(),
+                user.isActive()
+        );
     }
 }

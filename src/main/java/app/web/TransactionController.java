@@ -1,9 +1,10 @@
 package app.web;
 
+import app.security.AuthenticationDetails;
 import app.transaction.model.Transaction;
 import app.transaction.service.TransactionService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,9 +24,9 @@ public class TransactionController {
     }
 
     @GetMapping("/transactions")
-    public ModelAndView getTransactionsPage(HttpSession session) {
+    public ModelAndView getTransactionsPage(@AuthenticationPrincipal AuthenticationDetails authenticationDetails) {
 
-        List<Transaction> transactions = transactionService.getUserTransactionsById((UUID) session.getAttribute("user_id"));
+        List<Transaction> transactions = transactionService.getUserTransactionsById((UUID) authenticationDetails.getUserId());
 
         ModelAndView mav = new ModelAndView("transactions");
         mav.addObject("transactions", transactions);

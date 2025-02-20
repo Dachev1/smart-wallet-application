@@ -6,6 +6,7 @@ import app.web.dto.UserEditRequest;
 import app.web.mapper.DtoMapper;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class UserController {
 
     // Get all users
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ModelAndView getUsersPage() {
         List<User> users = userService.getAllUsers();
         ModelAndView mav = new ModelAndView("users");

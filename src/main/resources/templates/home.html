@@ -94,10 +94,9 @@
       </div>
     </div>
     <div class="single-section-box home-subscription">
-      <div th:class="${'subscription-label-box ' + #strings.toLowerCase(user.subscriptions[0].type.name()) + '-label-box'}">
-        <p th:text="${#strings.capitalize(#strings.toLowerCase(user.subscriptions[0].type.name())) + ' SUBSCRIPTION'}"></p>
+      <div class="default-label-box">
+        <p th:text="${user.subscriptions[0].type} + ' SUBSCRIPTION'"></p>
       </div>
-
       <table class="styled-table">
         <thead>
         <tr>

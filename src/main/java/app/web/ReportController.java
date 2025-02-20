@@ -4,6 +4,7 @@ import app.subscription.service.SubscriptionService;
 import app.transaction.service.TransactionService;
 import app.user.service.UserService;
 import app.wallet.service.WalletService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
@@ -25,6 +26,7 @@ public class ReportController {
     }
 
     @GetMapping("/reports")
+    @PreAuthorize("hasRole('ADMIN')")
     public ModelAndView getReportsPage() {
         ModelAndView mav = new ModelAndView("reports");
 

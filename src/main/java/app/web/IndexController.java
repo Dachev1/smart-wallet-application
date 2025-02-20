@@ -1,12 +1,11 @@
 package app.web;
 
-import app.user.model.User;
 import app.user.service.UserService;
 import app.web.dto.LoginRequest;
 import app.web.dto.RegisterRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +24,11 @@ public class IndexController {
     }
 
     @GetMapping
-    public String getIndexPage() {
+    public String getIndexPage(Authentication authentication) {
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            return "redirect:/home";
+        }
 
         return "index";
     }
@@ -37,20 +40,6 @@ public class IndexController {
         mav.addObject("loginRequest", new LoginRequest());
 
         return mav;
-    }
-
-    @PostMapping("/login")
-    public ModelAndView doLogin(@Valid @ModelAttribute LoginRequest loginRequest, BindingResult bindingResult, HttpSession session) {
-
-        if (bindingResult.hasErrors()) {
-            return new ModelAndView("login");
-        }
-
-        User loggedUser = userService.login(loginRequest);
-
-        session.setAttribute("user_id", loggedUser.getId());
-
-        return new ModelAndView("redirect:/home");
     }
 
     @GetMapping("/register")
@@ -72,13 +61,5 @@ public class IndexController {
         userService.register(registerRequest);
 
         return new ModelAndView("redirect:/home");
-    }
-
-    @GetMapping("/logout")
-    public ModelAndView logout(HttpSession session) {
-
-        session.invalidate();
-
-        return new ModelAndView("redirect:/");
     }
 }

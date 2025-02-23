@@ -16,5 +16,7 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
 
     Optional<Wallet> findAllByOwnerUsername(String username);
 
-    Collection<Wallet> findByOwner(User owner);
+    Collection<Wallet> findByOwnerOrderByCreatedOn(User owner);
+
+    Optional<Wallet> findByOwnerAndStatus(User user, WalletStatus walletStatus);
 }

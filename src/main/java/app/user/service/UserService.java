@@ -44,12 +44,14 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User register(RegisterRequest registerRequest) {
+    public void register(RegisterRequest registerRequest) {
         validateUsername(registerRequest.getUsername());
+
         User newUser = createUser(registerRequest);
+
         assignDefaultResourcesToUser(newUser);
+
         log.info("Successfully registered user [{}] with ID [{}]", newUser.getUsername(), newUser.getId());
-        return newUser;
     }
 
     public void editUserDetails(UUID userId, UserEditRequest editRequest) {
@@ -120,23 +122,10 @@ public class UserService implements UserDetailsService {
     }
 
     private void assignDefaultResourcesToUser(User user) {
-        walletService.createNewWallet(user);
+
+        walletService.initFirstWalletAfterRegister(user);
+
         subscriptionService.createDefaultSubscription(user);
-    }
-
-    private User validateUserCredentials(LoginRequest loginRequest) {
-        User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new DomainException("Invalid username or password"));
-
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            throw new DomainException("Invalid username or password");
-        }
-
-        if (!user.isActive()) {
-            throw new DomainException("User is inactive");
-        }
-
-        return user;
     }
 
     public String getUsernameById(UUID userId) {

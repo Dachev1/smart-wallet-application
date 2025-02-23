@@ -34,7 +34,7 @@ public class WalletOwnerValidator implements ConstraintValidator<WalletOwner, Tr
             return false;
         }
 
-        return walletService.getWalletsByUserId(userService.getById(userId))
+        return walletService.getWalletsByUser(userService.getById(userId))
                 .stream()
                 .anyMatch(wallet -> wallet.getId().equals(transferRequest.getFromWalletId()));
     }

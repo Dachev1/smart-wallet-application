@@ -16,4 +16,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     long countByType(TransactionType type);
 
     long countByStatus(TransactionStatus status);
+
+    List<Transaction> findTop4ByOwnerIdAndSenderEqualsOrOwnerIdAndReceiverEqualsOrderByCreatedOnDesc(
+            UUID ownerId, String senderWalletId,
+            UUID ownerId2, String receiverWalletId
+    );
 }

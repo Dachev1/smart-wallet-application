@@ -10,15 +10,14 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@WalletOwner
-
+//@WalletOwner
 @Data
 public class TransferRequest {
 
     @NotNull(message = "Sender wallet ID is required")
     private UUID fromWalletId;
 
-    @SelfTransferNotAllowed
+//    @SelfTransferNotAllowed
     @NotBlank(message = "Recipient username is required")
     private String toUsername;
 

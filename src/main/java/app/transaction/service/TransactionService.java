@@ -89,7 +89,7 @@ public class TransactionService {
         return transactionRepository.countByStatus(TransactionStatus.FAILED);
     }
 
-    public Transaction createSuccessfulTransaction(Wallet wallet, BigDecimal amount, String description, String receiver) {
+    public Transaction createSuccessfulTransaction(Wallet wallet, BigDecimal amount, String description, String receiver, TransactionType transactionType) {
         return createTransaction(
                 wallet.getOwner(),
                 wallet.getId().toString(),
@@ -97,14 +97,14 @@ public class TransactionService {
                 amount,
                 wallet.getBalance(),
                 wallet.getCurrency(),
-                TransactionType.WITHDRAWAL,
+                transactionType,
                 TransactionStatus.SUCCEEDED,
                 description,
                 null
         );
     }
 
-    public Transaction createFailedTransaction(Wallet wallet, BigDecimal amount, String reason,  String receiver) {
+    public Transaction createFailedTransaction(Wallet wallet, BigDecimal amount, String reason, String receiver) {
         return createTransaction(
                 wallet != null ? wallet.getOwner() : null,
                 wallet != null ? wallet.getId().toString() : "N/A",
@@ -156,6 +156,12 @@ public class TransactionService {
                 .failureReason(failureReason)
                 .createdOn(LocalDateTime.now())
                 .build();
+    }
+
+    public List<Transaction> getLastFourTransactionsForWallet(UUID ownerId, UUID walletId) {
+        return transactionRepository.findTop4ByOwnerIdAndSenderEqualsOrOwnerIdAndReceiverEqualsOrderByCreatedOnDesc(
+                ownerId, walletId.toString(), ownerId, walletId.toString()
+        );
     }
 
     public Transaction getById(UUID id) {

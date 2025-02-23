@@ -1,5 +1,7 @@
 package app.wallet.service;
 
+import app.exception.DomainException;
+import app.subscription.model.SubscriptionType;
 import app.transaction.model.Transaction;
 import app.transaction.model.TransactionStatus;
 import app.transaction.model.TransactionType;
@@ -33,79 +35,87 @@ public class WalletService {
         this.walletsProperty = walletsProperty;
     }
 
-    public Wallet createNewWallet(User user) {
+    public Map<UUID, List<Transaction>> getRecentTransactionsForUserWallets(User user) {
+        Map<UUID, List<Transaction>> recentTransactions = new HashMap<>();
+        for (Wallet wallet : getWalletsByUser(user)) {
+            recentTransactions.put(wallet.getId(), transactionService.getLastFourTransactionsForWallet(user.getId(), wallet.getId()));
+        }
+        return recentTransactions;
+    }
+
+    public void createNewWallet(User user) {
+        if (!canAddWallet(user)) {
+            throw new DomainException("Maximum wallets reached for your plan.");
+        }
+        Wallet wallet = Wallet.builder()
+                .owner(user)
+                .status(WalletStatus.ACTIVE)
+                .balance(BigDecimal.ZERO)
+                .currency(Currency.getInstance("EUR"))
+                .createdOn(LocalDateTime.now())
+                .updatedOn(LocalDateTime.now())
+                .build();
+        walletRepository.save(wallet);
+        log.info("Created new wallet for user [{}] with ID [{}]", user.getUsername(), wallet.getId());
+    }
+
+    public void initFirstWalletAfterRegister(User user) {
+        if (!getWalletsByUser(user).isEmpty()) {
+            throw new DomainException("Maximum wallets reached for your plan.");
+        }
         Wallet wallet = initializeWallet(user);
         walletRepository.save(wallet);
         log.info("Created wallet for user [{}] with ID [{}]", user.getUsername(), wallet.getId());
-        return wallet;
     }
 
     @Transactional
-    public Transaction topUp(UUID walletId, BigDecimal amount) {
+    public Transaction topUp(UUID walletId, BigDecimal amount, User currentUser) {
         Wallet wallet = getWalletById(walletId);
-
+        if (!wallet.getOwner().getId().equals(currentUser.getId())) {
+            throw new DomainException("Unauthorized wallet access");
+        }
         if (isWalletInactive(wallet)) {
             return transactionService.createFailedTransaction(wallet, amount, "Inactive wallet", getUsernameByWallet(wallet));
         }
-
         updateWalletBalance(wallet, wallet.getBalance().add(amount));
-        return transactionService.createSuccessfulTransaction(wallet, amount, "Top up", getUsernameByWallet(wallet));
+        return transactionService.createSuccessfulTransaction(wallet, amount, "Top up", getUsernameByWallet(wallet), TransactionType.DEPOSIT);
     }
 
     @Transactional
     public Transaction charge(UUID walletId, BigDecimal amount, String description) {
         Wallet wallet = getWalletById(walletId);
-
         if (wallet == null) {
             return transactionService.createFailedTransaction(null, amount, "Wallet not found", getUsernameByWallet(wallet));
         }
-
         if (isWalletInactive(wallet)) {
             return transactionService.createFailedTransaction(wallet, amount, "Inactive wallet", getUsernameByWallet(wallet));
         }
-
         if (hasSufficientBalance(wallet, amount)) {
             return transactionService.createFailedTransaction(wallet, amount, "Insufficient balance", getUsernameByWallet(wallet));
         }
-
         updateWalletBalance(wallet, wallet.getBalance().subtract(amount));
-        return transactionService.createSuccessfulTransaction(wallet, amount, description, getUsernameByWallet(wallet));
+        return transactionService.createSuccessfulTransaction(wallet, amount, description, getUsernameByWallet(wallet), TransactionType.WITHDRAWAL);
     }
 
     @Transactional
     public Transaction transferFunds(TransferRequest transferRequest, User userSender) {
-
         Wallet senderWallet = getWalletById(transferRequest.getFromWalletId());
-
-
         if (hasSufficientBalance(senderWallet, transferRequest.getAmount())) {
             return transactionService.createFailedTransaction(senderWallet, transferRequest.getAmount(), "Insufficient balance", getUsernameByWallet(senderWallet));
         }
-
-        // Find recipient's wallet
         Optional<Wallet> receiverWalletOptional = walletRepository.findAllByOwnerUsername(transferRequest.getToUsername())
                 .stream()
                 .filter(wallet -> wallet.getStatus() == WalletStatus.ACTIVE)
                 .findFirst();
-
         if (receiverWalletOptional.isEmpty()) {
             return transactionService.createFailedTransaction(senderWallet, transferRequest.getAmount(), "Recipient wallet is inactive or not found", "Doesn't exist");
         }
-
-        // Charge sender's wallet
-        Transaction senderTransaction = charge(senderWallet.getId(), transferRequest.getAmount(),
-                "Transfer to " + transferRequest.getToUsername());
-
+        Transaction senderTransaction = charge(senderWallet.getId(), transferRequest.getAmount(), "Transfer to " + transferRequest.getToUsername());
         if (senderTransaction.getStatus() == TransactionStatus.FAILED) {
             return senderTransaction;
         }
-
         Wallet recipientWallet = receiverWalletOptional.get();
-
-        // Credit recipient's wallet
         updateWalletBalance(recipientWallet, recipientWallet.getBalance().add(transferRequest.getAmount()));
-
-        // Create recipient's transaction record
         transactionService.createTransaction(
                 recipientWallet.getOwner(),
                 userSender.getUsername(),
@@ -118,8 +128,6 @@ public class WalletService {
                 "Received transfer from " + userSender.getUsername(),
                 null
         );
-
-        // Return the transaction for the sender
         return senderTransaction;
     }
 
@@ -139,6 +147,35 @@ public class WalletService {
                         wallet -> wallet.getOwner().getWallets().size() + " Wallets",
                         Collectors.counting()
                 ));
+    }
+
+    public boolean canAddWallet(User user) {
+        int allowed = switch (user.getSubscriptions().get(0).getType()) {
+            case ULTIMATE -> 3;
+            case PREMIUM -> 2;
+            default -> 1;
+        };
+        return getWalletsByUser(user).size() < allowed;
+    }
+
+    public Collection<Wallet> getWalletsByUser(User owner) {
+        return walletRepository.findByOwnerOrderByCreatedOn(owner);
+    }
+
+    public void switchActiveWallet(User user, UUID walletId) {
+
+        Wallet wallet = getWalletById(walletId);
+
+        if (user.getWallets().contains(wallet)) {
+
+            if (wallet.getStatus() == WalletStatus.ACTIVE) {
+                wallet.setStatus(WalletStatus.INACTIVE);
+            } else {
+                wallet.setStatus(WalletStatus.ACTIVE);
+            }
+        }
+
+        walletRepository.save(wallet);
     }
 
     private boolean isWalletInactive(Wallet wallet) {
@@ -168,14 +205,11 @@ public class WalletService {
     }
 
     private Wallet getWalletById(UUID walletId) {
-        return walletRepository.findById(walletId).orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        return walletRepository.findById(walletId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
     }
 
     private static String getUsernameByWallet(Wallet wallet) {
         return wallet.getOwner().getUsername();
-    }
-
-    public Collection<Wallet> getWalletsByUserId(User owner) {
-        return walletRepository.findByOwner(owner);
     }
 }
